@@ -29,7 +29,10 @@ runModel(
     fileextension = extension to save file with. Default is '.csv'
 
 """
-def runModel(Start, runTime, integInt, communInt,
+def runModel(Start, 
+             runTime, 
+             integInt, 
+             communInt,
              outputs_list,
              parameters,
              initital_stateVars,
@@ -58,12 +61,14 @@ def runModel(Start, runTime, integInt, communInt,
     ####################
     if Start==0: # start from t=0 instead of continue from where it left off
         t=0.0 # start time for simulation
+        stateVars = initital_stateVars.copy()
+        # Create copy of the initial state variables 
         # Run model at time=0, uses initial state variables that user input
         differential_return, variable_returns = model_function(parameters=parameters,
-                                                                stateVars=initital_stateVars,
-                                                                outputs_list=outputs_list,
-                                                                t=t
-                                                                ) 
+                                                               stateVars=initital_stateVars,
+                                                               outputs_list=outputs_list,
+                                                               t=t
+                                                               ) 
         model_results.append(variable_returns)        
             # dynamic() now returns a list of variables that can be appended into model_results
 
@@ -74,24 +79,30 @@ def runModel(Start, runTime, integInt, communInt,
         # check that prev_output has been included
         if not isinstance(prev_output, pd.DataFrame):
             raise TypeError("The variable prev_output must be a dataframe if Start == 1")
+        
+        t = prev_output['t'].iloc[-1]
+        # stateVars = prev_output.iloc[-1, 1:].tolist()
+        stateVars = initital_stateVars.copy()
 
+    ####################
+    # 4th-order Runge Kutta
+    ####################
     # 4th-order Runge Kutta algorithm to iterate through dynamic() between t = 0 and tStop
-    stateVars = initital_stateVars.copy()
-        # Create copy of the initial state variables 
     for intervalNo in range(int(lastIntervalNo)):
         for n in range(4): # 4 parts to Runge-Kutta estimation of new state
             # eval model fluxes and store diff eqn results in slopes[part][statevar] for 
             # each part of Runge-Kutta by calling dynamic() here:
             differential_return, variable_returns = model_function(parameters=parameters,
-                                                                    stateVars=stateVars,
-                                                                    outputs_list=outputs_list,
-                                                                    t=t)
+                                                                   stateVars=stateVars,
+                                                                   outputs_list=outputs_list,
+                                                                   t=t
+                                                                   )
             slopes.append(differential_return)  # Add list of differentials
             for svno in range(len(stateVars)): # estimate new stateVar values 1 at a time
                 match n:
                     case 0: # if part 1 of Runge-Kutta, record state at beginning of integInt
                         start.append(stateVars[svno]) # to be used throughout
-                        newStateVar=start[svno]+integInt*slopes[n][svno]/2
+                        newStateVar = start[svno] + integInt * slopes[n][svno] / 2
                     case 1: # if part 2 of Runge Kutta
                         newStateVar=start[svno]+integInt*slopes[n][svno]/2
                     case 2: # if part 3 of Runge Kutta
