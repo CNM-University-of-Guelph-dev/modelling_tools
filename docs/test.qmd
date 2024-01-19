@@ -1,0 +1,21 @@
+---
+title: "Test Page"
+---
+
+This is a test page where you can provide examples and documentation for building certain elements in Quarto.
+
+
+```         
+formatted code
+```
+
+``` python
+import pandas as pd
+```
+
+```{python}
+#| code-fold: true
+print('hello')
+```
+
+# TEst {.important}

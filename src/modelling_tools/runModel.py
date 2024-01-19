@@ -1,41 +1,13 @@
 import pandas as pd
 from datetime import datetime
 
-"""
-John's runModel function
-
-Modified by Braeden Fieguth, "Export Model Results" section by Dave Innes
-
-runModel(
-    Start, runTime, integInt, communInt, 
-    prev_output,
-    output_file, filename, filepath, fileext
-    ), where
-    Start = 0 (to start from time = 0), or Start = 1 (to continue from previous run)
-    runTime = duration of simulation in user-defined time units
-    integInt = integration interval in user-defined time units
-    communInt = time interval for communicating results to csv file
-
-    outputs_list = list, names of variables to include in output
-    parameters = dict, dictionary with all model parameters
-    initial_stateVars = list, all initial state variables
-    model_function = function, name of function with model equations
-
-    prev_output = if Start == 1 then must specificy the dataframe that was output from previous run
-
-    output_file = True/False - should output be exported to a csv file? Default is False.
-    filepath = file path to the folder to save the file in. Default is './' (which means current directory)
-    filename = name of the file (without extension). Date/time automatically added after this name. Default is 'generic'
-    fileextension = extension to save file with. Default is '.csv'
-
-"""
 def runModel(Start, 
              runTime, 
              integInt, 
              communInt,
              outputs_list,
              parameters,
-             initital_stateVars,
+             initial_stateVars,
              model_function,
              prev_output= None,
              output_file = False,
@@ -43,6 +15,68 @@ def runModel(Start,
              filename = 'generic',
              fileextension = '.csv'
              ):
+    """
+    Run a simulation using the 4th-order Runge-Kutta method and return the results as a dataframe and/or a CSV file.
+
+    Parameters
+    ----------
+    Start : int
+        Flag to determine whether to start a new simulation (0) or continue from a previous run (1).
+    runTime : float
+        Duration of the simulation in user-defined time units.
+    integInt : float
+        Integration interval in user-defined time units.
+    communInt : float
+        Time interval for communicating results to a dataframe.
+    outputs_list : list
+        Names of variables to include in the output.
+    parameters : dict
+        Dictionary with all model parameters.
+    initial_stateVars : list
+        List of all initial state variables.
+    model_function : function
+        Function containing model equations.
+    prev_output : pd.DataFrame, optional
+        Dataframe containing results from a previous run. Required if Start is 1.
+    output_file : bool, optional
+        Should output be exported to a CSV file? Default is False.
+    filepath : str, optional
+        File path to the folder to save the file in. Default is './' (current directory).
+    filename : str, optional
+        Name of the file (without extension). Date/time is automatically added after this name. Default is 'generic'.
+    fileextension : str, optional
+        Extension to save the file with. Default is '.csv'.
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe containing the model results.
+
+    Notes
+    -----
+    - The function uses the 4th-order Runge-Kutta algorithm for simulation.
+    - If Start is 0, the simulation starts from time t=0; if Start is 1, it continues from the previous run.
+    - If output_file is True, the results are exported to a CSV file.
+
+    Examples
+    --------
+    To start a new simulation:
+
+    >>> output_data = runModel(Start=0, runTime=10, integInt=0.1, communInt=1,
+    ...                        outputs_list=['variable1', 'variable2'],
+    ...                        parameters={'param1': 0.5, 'param2': 1.0},
+    ...                        initial_stateVars=[1.0, 2.0],
+    ...                        model_function=my_model_function)
+
+    To continue a previous simulation:
+
+    >>> output_data = runModel(Start=1, runTime=5, integInt=0.1, communInt=1,
+    ...                        outputs_list=['variable1', 'variable2'],
+    ...                        parameters={'param1': 0.5, 'param2': 1.0},
+    ...                        initial_stateVars=[1.0, 2.0],
+    ...                        model_function=my_model_function,
+    ...                        prev_output=previous_results_df)
+    """
     
     ### Setup Integration and Communication Loop ###
     lastIntervalNo=runTime/integInt 
@@ -61,11 +95,11 @@ def runModel(Start,
     ####################
     if Start==0: # start from t=0 instead of continue from where it left off
         t=0.0 # start time for simulation
-        stateVars = initital_stateVars.copy()
+        stateVars = initial_stateVars.copy()
         # Create copy of the initial state variables 
         # Run model at time=0, uses initial state variables that user input
         differential_return, variable_returns = model_function(parameters=parameters,
-                                                               stateVars=initital_stateVars,
+                                                               stateVars=initial_stateVars,
                                                                outputs_list=outputs_list,
                                                                t=t
                                                                ) 
@@ -82,7 +116,7 @@ def runModel(Start,
         
         t = prev_output['t'].iloc[-1]
         # stateVars = prev_output.iloc[-1, 1:].tolist()
-        stateVars = initital_stateVars.copy()
+        stateVars = initial_stateVars.copy()
 
     ####################
     # 4th-order Runge Kutta

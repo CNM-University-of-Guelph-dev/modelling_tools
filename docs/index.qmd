@@ -1,7 +1,17 @@
 ---
-title: "docs"
+title: ""
 ---
 
-This is a Quarto website.
+<div style="text-align: center;">
+  <h1>
+    Modelling Tools
+  </h1>
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+  <p>
+    Modelling tools is a collection of functions to run models and analyze the results. All the tools are organized into a Python package.
+  </p>
+
+  <p>
+    To view the package source code, see our Github page <a href="https://github.com/CNM-University-of-Guelph-dev/modelling_tools" target="_blank">here</a>.
+  </p>
+</div>

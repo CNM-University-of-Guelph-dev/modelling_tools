@@ -1,19 +1,59 @@
 project:
   type: website
 
+
+# tell quarto to read the generated sidebar
+metadata-files:
+  - _sidebar.yml
+
+
 website:
-  title: "docs"
+  title: "Modelling Tools"
   navbar:
+    background: "primary"
+    foreground: "danger"
+    search: true
     left:
       - href: index.qmd
         text: Home
-      - about.qmd
+      - text: "Getting Started"
+        file: getting_started.qmd  
+      - text: "Documentation"
+        file: reference/index.qmd
+      - test.qmd
+    tools:
+      - icon: github
+        menu:
+          - text: Source Code
+            url: https://github.com/CNM-University-of-Guelph-dev/modelling_tools
+          - text: Report a Bug
+            url: https://github.com/CNM-University-of-Guelph-dev/modelling_tools/issues
+            
+
+quartodoc:
+  style: pkgdown
+  title: API
+  package: modelling_tools
+
+  # write sidebar data to this file
+  sidebar: _sidebar.yml
+
+  sections:
+    - title: "Functions"
+      desc: ""
+      contents:
+        - name: runModel
+          children: embedded
+        - name: calculate_MSPE
+          children: embedded
+        - name: calculate_CCC
+          children: embedded
+        - name: plot_model_output
+          children: embedded
+
 
 format:
   html:
-    theme: cosmo
+    theme: lux
     css: styles.css
     toc: true
-
-
-

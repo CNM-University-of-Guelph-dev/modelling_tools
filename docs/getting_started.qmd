@@ -1,0 +1,107 @@
+---
+title: "Getting Started"
+---
+
+## Installation
+
+To start using the modelling_tools package you can it from GitHub using the following command:
+
+```bash
+pip install git+https://github.com/CNM-University-of-Guelph-dev/modelling_tools.git
+```
+
+## Building Your First Model
+
+In this example you will create a simple model of beta-hydroxybutyrate (BHB) kinetics. The flow diagram below represents the system we are going to model. There are two pools, A and B, and three fluxes, UAAO, UAAB and UBBA.
+
+![BHB Flow Diagram](./images/BHB_kinetics_diagram.PNG)
+
+### Define Initial Values
+
+To start, create a new Python file and copy the following code:
+
+```{python}
+import modelling_tools as mt    # Import the package
+
+# Define State Variables # 
+iStateVars = [0.905, 0]
+
+# Define Model Parameters #
+parameters = {
+    'kAO': 0.113,
+    'kBA': 0.125,
+    'kAB': 0.067,
+    'vol': 1.0
+}
+
+# Define Model Outputs #
+outputs = ['t', 'A', 'B', 'concA', 'concB', 'dAdt']
+```
+
+All models require three inputs in order to run. See the table for more details.
+
+| Name | Type | Description |
+|------|------|-------------|
+| `iStateVars` | list | A list containing the initial values of state variables. Order must be the same throughout |
+| `parameters` | dict | A dictionary containing all model parameters and their initial values. |
+| `outputs` | list | A list of variable names to include in the model output. Must include t. |
+
+### Define Model Equations
+
+When using the modelling_tools package model equations are defined as functions. The calculation steps are specific to each model. 
+
+```{python}
+def bhb_kinetics_model(parameters,
+                       stateVars, 
+                       outputs_list,
+                       t):
+
+    # Assign Parameter Values #
+    kAO = parameters['kAO']
+    kBA = parameters['kBA']
+    kAB = parameters['kAB']
+    vol = parameters['vol']
+
+    # Variables w/ Differential Equation #
+    A = stateVars[0]
+    B = stateVars[1]
+
+    # Model Equations # 
+    concA = A/vol
+    concB = B/vol
+    UAAO = kAO * concA
+    UBBA = kBA * concB
+    UAAB = kAB * concA
+
+    # Differential Equations # 
+    dAdt = UBBA - UAAO - UAAB
+    dBdt = UAAB - UBBA
+
+    # Format data for return # 
+    differential_return = [dAdt, dBdt] # same number and order as stateVars
+    local_variables = locals()   
+    # Store local variables 
+    
+    variable_returns = [local_variables.get(variable_name) for variable_name in outputs_list]
+    # Create list of variables to return
+    
+    return differential_return, variable_returns
+```
+
+### Run Model
+
+Now that you have created a model it can be run using the run_Model function. 
+
+```{python}
+results = mt.runModel(0,
+                      100,
+                      0.001,
+                      10,
+                      outputs,
+                      parameters,
+                      iStateVars,
+                      bhb_kinetics_model
+                      )
+```  
+
+To run different scenarios you can change the initial parameters or adjust the run time. For details on how the runModel function works see the [Documentation](./reference/index.qmd) page.

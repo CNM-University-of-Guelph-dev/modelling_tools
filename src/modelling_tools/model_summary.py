@@ -3,10 +3,52 @@ import math
 import matplotlib.pyplot as plt
 
 def calculate_MSPE(pred_mean, obs_mean, pred_std, obs_std, corr_coef) -> float:
+    """
+    Calculate Mean Squared Prediction Error (MSPE).
+
+    Parameters
+    ----------
+    pred_mean : float
+        Predicted mean values.
+    obs_mean : float
+        Observed mean values.
+    pred_std : float
+        Predicted standard deviation.
+    obs_std : float
+        Observed standard deviation.
+    corr_coef : float
+        Correlation coefficient.
+
+    Returns
+    -------
+    float
+        MSPE value.
+    """
     return (pred_mean - obs_mean)**2 + (pred_std - corr_coef*obs_std)**2 + (1-corr_coef**2)*obs_std**2
 
 
 def calculate_CCC(pred_mean, obs_mean, pred_std, obs_std, corr_coef) -> float:
+    """
+    Calculate Lin's Concordance Correlation Coefficient (CCC).
+
+    Parameters
+    ----------
+    pred_mean : float
+        Predicted mean values.
+    obs_mean : float
+        Observed mean values.
+    pred_std : float
+        Predicted standard deviation.
+    obs_std : float
+        Observed standard deviation.
+    corr_coef : float
+        Correlation coefficient.
+
+    Returns
+    -------
+    float
+        CCC value.
+    """
     u = (pred_mean - obs_mean) / math.sqrt(pred_std * obs_std)
     v = pred_std / obs_std
     Cb = ((v + 1/v + u**2)/2)**-1
@@ -15,7 +57,21 @@ def calculate_CCC(pred_mean, obs_mean, pred_std, obs_std, corr_coef) -> float:
 
 def plot_model_output(observations,
                       results):
-    
+    """
+    Plot observed vs predicted values for multiple columns.
+
+    Parameters
+    ----------
+    observations : pandas.DataFrame
+        DataFrame with observed values.
+    results : pandas.DataFrame
+        DataFrame with predicted values.
+
+    Returns
+    -------
+    None
+        Plots the results.
+    """
     ### Check column names match ###
     column_names = list(observations.columns)
     column_names.remove('t')
