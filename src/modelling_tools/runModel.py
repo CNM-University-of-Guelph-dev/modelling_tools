@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime
+import inspect
 
 def runModel(Start, 
              runTime, 
@@ -184,3 +185,8 @@ def runModel(Start,
 
     # return the dataframe to be used later
     return output_dataframe
+
+
+def collect():
+    local_variables = inspect.currentframe().f_back.f_locals
+    return local_variables

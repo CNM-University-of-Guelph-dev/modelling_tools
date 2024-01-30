@@ -4,34 +4,21 @@ import inspect
 class Model:
     def __init__(self, parameters, istate_vars, outputs_list, input_model, differential_variables):
         self.parameters = parameters
-        # self.istate_vars = istate_vars
         self.outputs_list = outputs_list
         self.input_model = input_model
         self.differential_variables = differential_variables
-        # Extract keys and values from istate_vars dictionary
-        self.state_variables = list(istate_vars.keys())
-        self.istate_vars = list(istate_vars.values())
+        self.istate_vars = istate_vars       
         # Store data from runModel
         self.differential_return = None
         self.variable_returns = None
         self.prev_output = None
-        
+                
 
-    def save_results(self):
-        local_variables = inspect.currentframe().f_back.f_locals
-
-        differential_return = [local_variables[var] for var in self.differential_variables]
-        variable_returns = [local_variables[variable_name] for variable_name in self.outputs_list]
-
-        self.differential_return = differential_return
-        self.variable_returns = variable_returns
-        
-
-    def runModel(self,
-                 Start, 
+    def runModel(self, 
                  runTime, 
                  integInt, 
-                 communInt
+                 communInt,
+                 continue_run = False
                 ):
         """
         Run a simulation using the 4th-order Runge-Kutta method and return the results as a dataframe and/or a CSV file.
@@ -95,7 +82,6 @@ class Model:
         ...                        model_function=my_model_function,
         ...                        prev_output=previous_results_df)
         """
-
         ### Setup Integration and Communication Loop ###
         lastIntervalNo=runTime/integInt 
         intervalNoForComm=communInt/integInt
@@ -111,15 +97,21 @@ class Model:
         ####################
         # Start New Simulation
         ####################
-        if Start==0: # start from t=0 instead of continue from where it left off
+        if not continue_run: # start from t=0 instead of continue from where it left off
             t=0.0 # start time for simulation
-            stateVars = self.istate_vars.copy()
-                        
+            istate_vars_import = list(self.istate_vars.values())
+            stateVars_list = istate_vars_import.copy()
+            stateVars_dict = self.istate_vars
+
             # Create copy of the initial state variables 
             # Run model at time=0, uses initial state variables that user input
-            self.input_model(parameters=self.parameters,
-                             stateVars=self.istate_vars,
-                             t=t)
+            values = self.input_model(parameters=self.parameters,
+                                      stateVars=self.istate_vars,
+                                      t=t)
+            differential_return = [values[var] for var in self.differential_variables]
+            variable_returns = [values[variable_name] for variable_name in self.outputs_list]
+            self.differential_return = differential_return
+            self.variable_returns = variable_returns
                              
             model_results.append(self.variable_returns)        
                 # dynamic() now returns a list of variables that can be appended into model_results
@@ -127,13 +119,15 @@ class Model:
         ####################
         # Continue Simulation
         ####################
-        if Start == 1:
+        else:   # If continue_run = True continue from previous timepoint
             # check that prev_output has been included
-
             if not isinstance(self.prev_output, pd.DataFrame):              
                 raise TypeError("The variable prev_output must be a dataframe if Start == 1")
             t = self.prev_output['t'].iloc[-1]          
-            stateVars = self.prev_output.iloc[-1, self.prev_output.columns.isin(self.state_variables)].tolist()
+
+            stateVars_list = self.prev_output.iloc[-1, self.prev_output.columns.isin(self.istate_vars.keys())].tolist()
+            stateVars_dict = self.prev_output.iloc[-1, self.prev_output.columns.isin(self.istate_vars.keys())].to_dict()
+            # Extract the last row of 'prev_output' corresponding to the keys in self.istate_vars
    
         ####################
         # 4th-order Runge Kutta
@@ -143,15 +137,19 @@ class Model:
             for n in range(4): # 4 parts to Runge-Kutta estimation of new state
                 # eval model fluxes and store diff eqn results in slopes[part][statevar] for 
                 # each part of Runge-Kutta by calling dynamic() here:
-                self.input_model(parameters=self.parameters,
-                                 stateVars=stateVars,
-                                 t=t)
+                values = self.input_model(parameters=self.parameters,
+                                          stateVars=stateVars_dict,
+                                          t=t)
+                differential_return = [values[var] for var in self.differential_variables]
+                variable_returns = [values[variable_name] for variable_name in self.outputs_list]
+                self.differential_return = differential_return
+                self.variable_returns = variable_returns
 
                 slopes.append(self.differential_return) # Add list of differentials
-                for svno in range(len(stateVars)): # estimate new stateVar values 1 at a time
+                for svno in range(len(stateVars_list)): # estimate new stateVar values 1 at a time
                     match n:
                         case 0: # if part 1 of Runge-Kutta, record state at beginning of integInt
-                            start.append(stateVars[svno]) # to be used throughout
+                            start.append(stateVars_list[svno]) # to be used throughout
                             newStateVar = start[svno] + integInt * slopes[n][svno] / 2
                         case 1: # if part 2 of Runge Kutta
                             newStateVar=start[svno]+integInt*slopes[n][svno]/2
@@ -161,8 +159,11 @@ class Model:
                             newStateVar=start[svno]+integInt/6*(slopes[0][svno]+2*slopes[1][svno]+
                                 2*slopes[2][svno]+slopes[3][svno])
                             
-                    stateVars[svno]=newStateVar 
+                    stateVars_list[svno]=newStateVar 
                         # update stateVars w new values after each part of Runge-Kutta:
+                    
+                stateVars_dict.update(dict(zip(self.istate_vars.keys(), stateVars_list)))
+
             # end of one iteration thru complete 4th-order Runge-Kutta algorithm = 1 integInt
             t+=integInt 
                 # increment time to associate with new state
@@ -180,7 +181,7 @@ class Model:
         ####################
         output_dataframe = pd.DataFrame(model_results, columns = self.outputs_list)
 
-        if Start == 1:
+        if continue_run:
             # join new data onto previous data
             output_dataframe = pd.concat([self.prev_output,output_dataframe], ignore_index=True)
        
